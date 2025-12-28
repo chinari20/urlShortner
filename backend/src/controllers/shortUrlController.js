@@ -1,67 +1,68 @@
 import { nanoid } from "nanoid";
 import { ShortURL } from "../models/shorturl.model.js";
 
+/* CREATE SHORT URL */
 export const shortUrl = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { originalUrl, expiresAt, title, customUrl } = req.body;
+    const { originalUrl, customUrl } = req.body;
+
     if (!originalUrl) {
-      return res.status(400).send({ error: "Original URL is required" });
+      return res.status(400).json({ error: "Original URL is required" });
     }
-    let shortCode = "";
-    if (customUrl) {
-      shortCode = customUrl;
-      const existData = await ShortURL.findOne({ shortCode });
-      if (existData) {
-        return res.status(400).send({ error: "try with new url" });
+
+    let shortCode = customUrl || nanoid(7);
+
+    while (await ShortURL.findOne({ shortCode })) {
+      if (customUrl) {
+        return res.status(400).json({ error: "Custom URL already exists" });
       }
-    } else {
       shortCode = nanoid(7);
-      let isUnique = false;
-      while (!isUnique) {
-        const existData = await ShortURL.findOne({ shortCode });
-        if (existData) {
-          shortCode = nanoid(7);
-        } else {
-          isUnique = true;
-        }
-      }
     }
-    const newUser = new ShortURL({
+
+    const newUrl = await ShortURL.create({
       originalUrl,
       shortCode,
       userId,
     });
-    await newUser.save();
-    return res.status(200).send(newUser);
-  } catch (error) {
-    console.error("Error creating short URL:", error);
-    return res.status(500).send({ error: "Internal server error" });
+
+    res.status(201).json({
+      shortUrl: `http://localhost:3000/api/s/${shortCode}`,
+      data: newUrl,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
+/* REDIRECT */
 export const redirectFunction = async (req, res) => {
   try {
-    const { shortcode } = req.params;
-    const shortUrlData = await ShortURL.findOne({ shortCode: shortcode });
-    if (!shortUrlData) {
-      return res.status(404).send({ error: "Short URL not found" });
+    const { shortCode } = req.params;
+
+    const url = await ShortURL.findOne({ shortCode });
+
+    if (!url) {
+      return res.status(404).send("Short URL not found");
     }
-    // Redirect to the original URL
-    return res.redirect(shortUrlData.originalUrl);
-  } catch (error) {
-    console.error("Error redirecting:", error);
-    return res.status(500).send({ error: "Internal server error" });
+
+    url.clicks++;
+    await url.save();
+
+    return res.redirect(url.originalUrl);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
 };
 
-export async function getUserUrls(req, res) {
+/* USER URL HISTORY */
+export const getUserUrls = async (req, res) => {
   try {
-    // Assuming you have user info in req.user (from auth middleware) - checking if user is authenticated
-    const userId = req.user.id;
-    const urls = await ShortURL.find({ user: userId }).sort({ createdAt: -1 });
+    const urls = await ShortURL.find({ userId: req.user.id });
     res.json(urls);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch URLs" });
   }
-}
+};

@@ -1,17 +1,15 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, Outlet } from 'react-router-dom'
-import { getToken, removeUser } from '../../redux/slices/User';
+import { useSelector } from "react-redux";
+import { Navigate, Outlet } from "react-router-dom";
+import { getToken } from "../../redux/slices/User";
 
 const PrivateRoute = () => {
+  const token = useSelector(getToken);
 
-    const dispatch = useDispatch();
-    const token = useSelector(getToken);
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-    if(!token) {
-        dispatch(removeUser())
-        return <Navigate to={'/login'}/>
-    }
-    return <Outlet/>
-}
+  return <Outlet />;
+};
 
-export default PrivateRoute
+export default PrivateRoute;
