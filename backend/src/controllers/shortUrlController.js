@@ -27,7 +27,7 @@ export const shortUrl = async (req, res) => {
     });
 
     res.status(201).json({
-      shortUrl: `http://localhost:3000/api/s/${shortCode}`,
+      shortUrl: `https://url1-su1g.onrender.com/api/s/${shortCode}`,
       data: newUrl,
     });
   } catch (err) {
