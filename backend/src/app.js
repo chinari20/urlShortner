@@ -18,7 +18,11 @@ const app = express();
 ================================ */
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "https://urlshortner-lhpj.onrender.com", // ✅ ADD THIS
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -40,7 +44,12 @@ connectDB();
 ================================ */
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
+
+/* ✅ CREATE SHORT URL */
 app.use("/api/s", shortURLRouter);
+
+/* ✅ PUBLIC REDIRECT (CRITICAL FIX) */
+app.use("/", shortURLRouter);
 
 /* ===============================
    FRONTEND (PRODUCTION)
@@ -49,8 +58,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 
-/* 🔥 IMPORTANT FIX: DO NOT CATCH /api ROUTES */
-app.get(/^\/(?!api).*/, (req, res) => {
+/* ❗ DO NOT OVERRIDE /api or /s ROUTES */
+app.get(/^\/(?!api|s).*/, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../../frontend/dist/index.html")
   );
