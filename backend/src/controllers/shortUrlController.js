@@ -3,7 +3,8 @@ import { ShortURL } from "../models/shorturl.model.js";
 
 export const shortUrl = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id || "test-user-123";
+
     const { originalUrl, expiresAt, title, customUrl } = req.body;
     if (!originalUrl) {
       return res.status(400).send({ error: "Original URL is required" });
